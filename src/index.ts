@@ -97,10 +97,86 @@ function portOpen(port: number): Promise<boolean> {
 let masterStart: Promise<void> | null = null
 
 /**
- * Ensure the TMWebDriver master is running. Like GA: probe the link port; when
- * nothing listens, spawn the bundled master script, wait until it accepts TCP
- * connections, and leave it running (no auto-shutdown). When a master is
- * already up — started manually or by another client — reuse it.
+ * The Python command used to run and probe the master; \`PYTHON\` env overrides.
+ */
+function pythonCmd(): string {
+  return process.env.PYTHON ?? 'python'
+}
+
+/**
+ * Whether the master's Python dependencies are importable
+ * (\`simple_websocket_server\`, \`bottle\`, \`requests\`).
+ */
+function pythonDepsOk(): Promise<boolean> {
+  return new Promise((resolve) => {
+    const child = spawn(pythonCmd(), ['-c', 'import simple_websocket_server, bottle, requests'], {
+      stdio: 'ignore',
+    })
+    child.once('error', () => resolve(false))
+    child.once('exit', (code) => resolve(code === 0))
+  })
+}
+
+/**
+ * Install the master's Python dependencies from the bundled requirements.txt.
+ * Resolves when pip finishes; rejects on a nonzero exit.
+ */
+function installPythonDeps(): Promise<void> {
+  return new Promise((resolve, reject) => {
+    const req = join(MODULE_DIR, '..', 'master', 'requirements.txt')
+    const child = spawn(pythonCmd(), ['-m', 'pip', 'install', '-r', req], {
+      stdio: 'ignore',
+    })
+    child.once('error', (error) => reject(new Error(`pip failed to start: ${error.message}`)))
+    child.once('exit', (code) => {
+      if (code === 0) resolve()
+      else reject(new Error(`pip install exited ${code} (python ${pythonCmd()} -m pip install -r ${req})`))
+    })
+  })
+}
+
+/**
+ * Try to start the bundled master and wait up to \`timeoutMs\` for its link port
+ * to open. Kills the child on timeout. Resolves true on success.
+ *
+ * @param linkUrl - the link endpoint whose port is probed.
+ * @param timeoutMs - how long to wait for the port.
+ * @returns whether the master came up.
+ */
+function tryStartMaster(linkUrl: string, timeoutMs: number): Promise<boolean> {
+  return new Promise((resolve) => {
+    const child = spawn(pythonCmd(), ['-u', MASTER_SCRIPT], {
+      stdio: 'ignore',
+      // Detached so the master outlives the DSH process that lazily started it
+      // (GA keeps the master independent of any single client). unref lets the
+      // parent exit normally; the master stays up for other clients.
+      detached: true,
+    })
+    child.unref()
+    const deadline = Date.now() + timeoutMs
+    const poll = async (): Promise<void> => {
+      if (await portOpen(linkPort(linkUrl))) {
+        resolve(true)
+        return
+      }
+      if (Date.now() >= deadline) {
+        child.kill()
+        resolve(false)
+        return
+      }
+      setTimeout(() => void poll(), 250)
+    }
+    void poll()
+  })
+}
+
+/**
+ * Ensure the TMWebDriver master is running, auto-installing its Python
+ * dependencies when the first start attempt fails. Like GA: probe the link
+ * port; when nothing listens, spawn the bundled master script; on failure
+ * check the deps, install what is missing, and retry. An already-running
+ * master — started manually or by another client — is reused. The master stays
+ * running (no auto-shutdown).
  *
  * @param linkUrl - the link endpoint (its port is probed).
  * @returns a promise resolving once the master accepts connections.
@@ -109,31 +185,23 @@ async function ensureMaster(linkUrl: string): Promise<void> {
   if (await portOpen(linkPort(linkUrl))) return
   if (masterStart !== null) return masterStart
   masterStart = (async () => {
-    const script = MASTER_SCRIPT
-    if (!existsSync(script)) {
+    if (!existsSync(MASTER_SCRIPT)) {
       throw new Error(
-        `bundled TMWebDriver master not found at ${script} — install the full package or start the master manually`,
+        `bundled TMWebDriver master not found at ${MASTER_SCRIPT} — install the full package or start the master manually`,
       )
     }
-    const child = spawn(process.env.PYTHON ?? 'python', ['-u', script], {
-      stdio: 'ignore',
-      // Detached so the master outlives the DSH process that lazily started it
-      // (GA keeps the master independent of any single client). unref lets the
-      // parent exit normally; the master stays up for other clients.
-      detached: true,
-    })
-    child.unref()
-    const deadline = Date.now() + 15_000
-    // Wait for the port to open; the master keeps running afterwards (常驻).
-    while (Date.now() < deadline) {
-      if (await portOpen(linkPort(linkUrl))) return
-      await new Promise((resolve) => setTimeout(resolve, 250))
+    // First attempt: assume deps are present (the common case).
+    if (await tryStartMaster(linkUrl, 15_000)) return
+    // Failure: check deps and install what is missing, then retry once.
+    if (!(await pythonDepsOk())) {
+      await installPythonDeps()
     }
-    child.kill()
-    throw new Error(
-      `TMWebDriver master did not start within 15s (python ${process.env.PYTHON ?? 'python'} ${script}). `
-      + 'Install Python deps with: python -m pip install -r master/requirements.txt',
-    )
+    if (!(await tryStartMaster(linkUrl, 15_000))) {
+      throw new Error(
+        `TMWebDriver master did not start within 15s (python ${pythonCmd()} ${MASTER_SCRIPT}). `
+        + 'Check the master log or run: python -m pip install -r master/requirements.txt',
+      )
+    }
   })()
   try {
     await masterStart
