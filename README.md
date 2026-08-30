@@ -74,21 +74,33 @@ running (no auto-shutdown); a later call reuses it in milliseconds.
 
 ## Setup (3 steps)
 
-### 1. Install the Chrome extension
+### 1. Get the Chrome extension
 
-1. Open `chrome://extensions`, enable **Developer mode**.
-2. Click **Load unpacked** and select the `assets/tmwd_cdp_bridge/` folder.
+The extension ships inside this package. Get it from either channel:
+
+- **npm** (after step 2): `node_modules/dsh-tmwebdriver/assets/tmwd_cdp_bridge/`
+- **GitHub**: clone this repo and use `assets/tmwd_cdp_bridge/`
 
 ### 2. Install the DSH plugin
 
-From the plugin checkout directory (or any directory containing it):
-
 ```sh
+dsh plugin --profile web add dsh-tmwebdriver        # from npm
+# or, from a checkout:
 dsh plugin --profile web add /path/to/dsh-tmwebdriver
 ```
 
 Restart `dsh web` (or the profile you installed into) so the bundle patch
 loads.
+
+### 3. Load the Chrome extension
+
+1. Open `chrome://extensions`, enable **Developer mode** (top-right).
+2. Click **Load unpacked** and select the extension folder from step 1.
+3. Keep at least one normal web page open (about:blank does not load it).
+
+> If you forget this step, the `browser_list_tabs` tool detects it and prints
+> the same instructions automatically — the extension folder path is resolved
+> from the installed package.
 
 ### 3. Use it
 

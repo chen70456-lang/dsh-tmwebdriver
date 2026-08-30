@@ -43,6 +43,12 @@ export interface TabInfo {
 export interface ListTabsOutput {
     /** The scriptable tabs. */
     tabs: TabInfo[];
+    /**
+     * Present when the master is up but no tab has connected — the
+     * `tmwd_cdp_bridge` Chrome extension is not loaded (or Chrome has no open
+     * scriptable tab). Carries a model-facing install guide.
+     */
+    extensionGuide?: string;
 }
 /** The canonical `browser_execute_js` output value. */
 export interface ExecuteJsOutput {

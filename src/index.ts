@@ -225,6 +225,12 @@ export interface TabInfo {
 export interface ListTabsOutput {
   /** The scriptable tabs. */
   tabs: TabInfo[]
+  /**
+   * Present when the master is up but no tab has connected — the
+   * `tmwd_cdp_bridge` Chrome extension is not loaded (or Chrome has no open
+   * scriptable tab). Carries a model-facing install guide.
+   */
+  extensionGuide?: string
 }
 
 /** The canonical `browser_execute_js` output value. */
@@ -309,20 +315,40 @@ function projectTab(raw: unknown): TabInfo | null {
 }
 
 /**
+ * Absolute filesystem path of the bundled `tmwd_cdp_bridge` extension directory,
+ * for install guidance.
+ */
+function extensionDir(): string {
+  return join(MODULE_DIR, '..', 'assets', 'tmwd_cdp_bridge')
+}
+
+/**
+ * The model-facing guide shown when the master is running but no browser tab
+ * has connected (the extension is not loaded, or Chrome has no scriptable tab).
+ */
+const EXTENSION_GUIDE = `No browser tabs connected. The tmwd_cdp_bridge Chrome extension is not installed (or Chrome has no open page). Install it once:
+1. Open chrome://extensions and enable "Developer mode" (top-right).
+2. Click "Load unpacked" and select the folder: ${extensionDir()}
+3. Keep at least one normal web page open (about:blank does not load the extension).
+
+This folder ships inside the dsh-tmwebdriver package (npm or git checkout).`
+
+/**
  * List scriptable tabs. With no `urlPattern` the master's `get_all_sessions`
  * returns every active session; with one, `find_session` narrows to tabs whose
- * URL contains the pattern.
+ * URL contains the pattern. When the master responds but no tab is connected,
+ * the returned guide tells the user how to install the Chrome extension.
  *
  * @param linkUrl - the link endpoint.
  * @param urlPattern - optional URL substring filter.
  * @param signal - cooperative cancellation signal.
- * @returns the projected tabs.
+ * @returns the projected tabs (possibly empty) and an optional install guide.
  */
 async function listTabs(
   linkUrl: string,
   urlPattern: string | undefined,
   signal: AbortSignal,
-): Promise<TabInfo[]> {
+): Promise<ListTabsOutput> {
   const raw = await linkCommand(
     linkUrl,
     urlPattern !== undefined
@@ -348,7 +374,12 @@ async function listTabs(
       }
     }
   }
-  return tabs
+  if (tabs.length === 0 && urlPattern === undefined) {
+    // Master is up (linkCommand succeeded) but nothing connected: the common
+    // cause is the extension not being loaded.
+    return { tabs, extensionGuide: EXTENSION_GUIDE }
+  }
+  return { tabs }
 }
 
 /** Render one tab list as model-facing text. */
@@ -402,18 +433,25 @@ function defineListTabsTool(linkUrl: string, timeoutMs: number) {
             },
             required: true,
           },
+          extensionGuide: { type: 'string' },
         },
       },
-      render: (_args, value: ListTabsOutput) => renderTabs(value.tabs),
+      render: (_args, value: ListTabsOutput) => {
+        if (value.extensionGuide !== undefined) {
+          return [{ type: 'text', text: value.extensionGuide }]
+        }
+        return renderTabs(value.tabs)
+      },
       presentationMeta: (_args, value: ListTabsOutput): JsonValue => ({
         tabs: tabsToJson(value.tabs),
+        ...value.extensionGuide !== undefined ? { extensionGuide: value.extensionGuide } : {},
       }),
     },
     timeoutMs,
     // A tab listing is a read; sibling listings may overlap safely.
     isConcurrencySafe: () => true,
     async execute(args, exec: ToolRunContext): Promise<ListTabsOutput> {
-      return { tabs: await listTabs(linkUrl, args.urlPattern, exec.signal) }
+      return await listTabs(linkUrl, args.urlPattern, exec.signal)
     },
     presentCall: (args) => ({
       card: 'generic',
@@ -427,7 +465,17 @@ function defineListTabsTool(linkUrl: string, timeoutMs: number) {
       if (result.isError) return undefined
       const meta = result.meta
       if (typeof meta !== 'object' || meta === null) return undefined
-      const tabs = (meta as Record<string, unknown>).tabs
+      const record = meta as Record<string, unknown>
+      const guide = record.extensionGuide
+      if (typeof guide === 'string') {
+        return {
+          card: 'generic',
+          title: 'Browser extension not connected',
+          kind: 'read',
+          content: [{ type: 'text', text: guide }],
+        }
+      }
+      const tabs = record.tabs
       if (!isTabInfoArray(tabs)) return undefined
       const title = args.urlPattern !== undefined
         ? `Tabs matching "${args.urlPattern}"`
@@ -498,7 +546,7 @@ function defineExecuteJsTool(linkUrl: string, timeoutMs: number) {
     async execute(args, exec: ToolRunContext): Promise<ExecuteJsOutput> {
       let sessionId: string | undefined = args.sessionId
       if (sessionId === undefined && args.urlPattern !== undefined) {
-        const tabs = await listTabs(linkUrl, args.urlPattern, exec.signal)
+        const { tabs } = await listTabs(linkUrl, args.urlPattern, exec.signal)
         const first = tabs[0]
         if (first === undefined) {
           throw new Error(`no tab matches urlPattern "${args.urlPattern}"`)
