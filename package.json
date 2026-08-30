@@ -1,6 +1,6 @@
 {
   "name": "dsh-tmwebdriver",
-  "version": "0.1.0",
+  "version": "0.1.1",
   "description": "DSH profile bundle: control your real, logged-in browser through TMWebDriver (Chrome extension bridge)",
   "type": "module",
   "main": "lib/index.js",
