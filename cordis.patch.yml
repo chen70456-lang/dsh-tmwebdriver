@@ -1,0 +1,8 @@
+# dsh-tmwebdriver bundle patch: mounts the TMWebDriver browser tools as one
+# insert over the profile tree. Applied after dsh-base / dsh-web-app layers.
+- insert:
+    - id: tmwebdriver-browser
+      name: 'dsh-tmwebdriver'
+      config:
+        linkUrl: http://127.0.0.1:18766/link
+        timeoutMs: 30000
