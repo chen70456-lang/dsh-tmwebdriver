@@ -79,3 +79,18 @@ The bundle patch row (`cordis.patch.yml`) supports:
 ## License
 
 [MIT](LICENSE)
+
+## Credits / Origin
+
+This plugin embeds two components from the **GenericAgent** toolchain
+(https://github.com/ljqin/GenericAgent), which are redistributed here
+unmodified for standalone use:
+
+| Component | Path | Origin |
+|-----------|------|--------|
+| TMWebDriver master | `master/tmwebdriver_master.py` | GenericAgent — TMWebDriver.py |
+| Chrome extension bridge | `assets/tmwd_cdp_bridge/` | GenericAgent — assets/tmwd_cdp_bridge/ |
+
+Both remain under their original terms and copyright; see the respective
+upstream project for details. The DSH plugin glue (`src/index.ts`,
+`cordis.patch.yml`, `master/start-master.*`) is MIT-licensed as above.

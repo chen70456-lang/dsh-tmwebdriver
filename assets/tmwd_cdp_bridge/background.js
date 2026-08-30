@@ -1,3 +1,6 @@
+// Bundled from GenericAgent (https://github.com/ljqin/GenericAgent) —
+// assets/tmwd_cdp_bridge/background.js. Redistributed unmodified under its
+// original terms; see the upstream project for license and copyright.
 // background.js - Cookie + CDP Bridge
 chrome.runtime.onInstalled.addListener(() => {
   console.log('CDP Bridge installed');
