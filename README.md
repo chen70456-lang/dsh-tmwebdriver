@@ -75,3 +75,7 @@ The bundle patch row (`cordis.patch.yml`) supports:
 - A DSH installation (any profile with `dsh-base`).
 - Chrome with the `tmwd_cdp_bridge` extension loaded (step 1).
 - Python 3 on PATH (the lazy-start spawns `python`; set `PYTHON` env to override).
+
+## License
+
+[MIT](LICENSE)

@@ -18,7 +18,8 @@
     "lib/index.d.ts",
     "cordis.patch.yml",
     "master/",
-    "assets/"
+    "assets/",
+    "LICENSE"
   ],
   "license": "MIT",
   "keywords": [
