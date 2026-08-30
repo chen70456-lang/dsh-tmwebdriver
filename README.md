@@ -95,7 +95,7 @@ The bundle patch row (`cordis.patch.yml`) supports:
 ## Credits / Origin
 
 This plugin embeds two components from the **GenericAgent** toolchain
-(https://github.com/ljqin/GenericAgent), which are redistributed here
+(https://github.com/lsdefine/GenericAgent), which are redistributed here
 unmodified for standalone use:
 
 | Component | Path | Origin |

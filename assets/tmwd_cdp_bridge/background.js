@@ -1,4 +1,4 @@
-// Bundled from GenericAgent (https://github.com/ljqin/GenericAgent) —
+// Bundled from GenericAgent (https://github.com/lsdefine/GenericAgent) —
 // assets/tmwd_cdp_bridge/background.js. Redistributed unmodified under its
 // original terms; see the upstream project for license and copyright.
 // background.js - Cookie + CDP Bridge

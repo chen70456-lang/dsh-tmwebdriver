@@ -1,4 +1,4 @@
-# Bundled from GenericAgent (https://github.com/ljqin/GenericAgent) — TMWebDriver.py.
+# Bundled from GenericAgent (https://github.com/lsdefine/GenericAgent) — TMWebDriver.py.
 # Redistributed unmodified (plus a keep-alive main loop) under its original terms.
 # See the upstream project for license and copyright.
 import json, threading, time, uuid, queue, socket, requests, traceback
