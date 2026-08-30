@@ -47,9 +47,10 @@ function defineSnapshotTool(linkUrl: string, timeoutMs: number, maxChars: number
   return defineTool({
     name: 'browser_snapshot',
     description:
-      'Read the target tab visible page text (innerText, whitespace-collapsed) '
-      + 'capped at ' + String(maxChars) + ' characters. Cheaper and more reliable than '
-      + 'hand-writing JavaScript for a quick look at what the page shows.',
+      'Read the target tab visible page text (innerText, whitespace-collapsed). '
+      + 'When the page exceeds ' + String(maxChars) + ' characters, keeps the head and '
+      + 'tail with an omitted marker in between, so both ends of the page stay readable. '
+      + 'Cheaper and more reliable than hand-writing JavaScript for a quick look.',
     parameters: {
       ...TARGET_PARAMS,
     },
@@ -74,10 +75,15 @@ function defineSnapshotTool(linkUrl: string, timeoutMs: number, maxChars: number
     async execute(args, exec: ToolRunContext): Promise<SnapshotOutput> {
       const sid = await resolveTarget(linkUrl, args.sessionId, args.urlPattern, exec.signal)
       const cap = JSON.stringify(maxChars)
+      const half = JSON.stringify(Math.floor(maxChars / 2))
       const data = await runJs(linkUrl,
         '(function(){'
-        + '  var t = (document.body ? document.body.innerText : "").replace(/\s+/g, " ").trim();'
-        + '  return { text: t.slice(0, ' + cap + '), url: location.href, truncated: t.length > ' + cap + ' };'
+        + '  var t = (document.body ? document.body.innerText : "").trim();'
+        + '  if (t.length <= ' + cap + ') return { text: t, url: location.href, truncated: false };'
+        + '  var nl = String.fromCharCode(10);'
+        + '  var head = t.slice(0, ' + half + ');'
+        + '  var tail = t.slice(t.length - ' + half + ');'
+        + '  return { text: head + nl + "[...omitted " + ' + cap + ' + " chars]" + nl + tail, url: location.href, truncated: true };'
         + '})()',
         sid, exec.signal)
       const obj = (typeof data === 'object' && data !== null ? data : {}) as Record<string, unknown>
