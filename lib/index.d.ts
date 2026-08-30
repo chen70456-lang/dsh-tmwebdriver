@@ -58,6 +58,39 @@ export interface ExecuteJsOutput {
     sessionId?: string;
 }
 /**
+ * POST one command object to the TMWebDriver link endpoint and return the
+ * parsed `r` field. Throws a structured error when the master is unreachable
+ * or the link endpoint reports an error payload.
+ *
+ * @param linkUrl - the link endpoint.
+ * @param payload - the command object (cmd plus arguments).
+ * @param signal - cooperative cancellation signal.
+ * @returns the response `r` value (any lossless JSON).
+ */
+export declare function linkCommand(linkUrl: string, payload: Record<string, unknown>, signal: AbortSignal): Promise<unknown>;
+/**
+ * Resolve the target tab for a structured tool call: an explicit \`sessionId\`
+ * wins; otherwise \`urlPattern\` locates the first matching tab; otherwise the
+ * master's default session is used (\`sessionId\` omitted from the payload).
+ *
+ * @param linkUrl - the link endpoint.
+ * @param sessionId - explicit tab id, when provided.
+ * @param urlPattern - URL substring fallback, when provided.
+ * @param signal - cooperative cancellation signal.
+ * @returns the payload sessionId to send (\`undefined\` = master default).
+ */
+export declare function resolveTarget(linkUrl: string, sessionId: string | undefined, urlPattern: string | undefined, signal: AbortSignal): Promise<string | undefined>;
+/**
+ * Run one execute_js command and return its canonical \`data\` value.
+ *
+ * @param linkUrl - the link endpoint.
+ * @param code - JavaScript to run in the target tab.
+ * @param sessionId - resolved tab id (\`undefined\` = master default).
+ * @param signal - cooperative cancellation signal.
+ * @returns the script's returned value.
+ */
+export declare function runJs(linkUrl: string, code: string, sessionId: string | undefined, signal: AbortSignal): Promise<JsonValue>;
+/**
  * Register the TMWebDriver browser tools. Config comes from the bundle patch
  * row (`linkUrl`, `timeoutMs`); defaults keep the standard local master ports.
  */

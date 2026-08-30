@@ -17,6 +17,7 @@ import { defineTool } from '@deepseek-ai/dsh-tools'
 import type { ToolRunContext } from '@deepseek-ai/dsh-tools'
 import type { ContentBlock } from '@deepseek-ai/dsh-llm'
 import type { JsonValue } from '@deepseek-ai/dsh-session'
+import { applyStructuredTools } from './tools.ts'
 import { connect } from 'node:net'
 import { spawn } from 'node:child_process'
 import { existsSync } from 'node:fs'
@@ -261,7 +262,7 @@ function tabsToJson(tabs: TabInfo[]): JsonValue {
  * @param signal - cooperative cancellation signal.
  * @returns the response `r` value (any lossless JSON).
  */
-async function linkCommand(
+export async function linkCommand(
   linkUrl: string,
   payload: Record<string, unknown>,
   signal: AbortSignal,
@@ -287,6 +288,59 @@ async function linkCommand(
   const body = (await response.json()) as { r?: unknown; error?: string }
   if (body.error !== undefined) throw new Error(`TMWebDriver error: ${body.error}`)
   return body.r
+}
+
+/**
+ * Resolve the target tab for a structured tool call: an explicit \`sessionId\`
+ * wins; otherwise \`urlPattern\` locates the first matching tab; otherwise the
+ * master's default session is used (\`sessionId\` omitted from the payload).
+ *
+ * @param linkUrl - the link endpoint.
+ * @param sessionId - explicit tab id, when provided.
+ * @param urlPattern - URL substring fallback, when provided.
+ * @param signal - cooperative cancellation signal.
+ * @returns the payload sessionId to send (\`undefined\` = master default).
+ */
+export async function resolveTarget(
+  linkUrl: string,
+  sessionId: string | undefined,
+  urlPattern: string | undefined,
+  signal: AbortSignal,
+): Promise<string | undefined> {
+  if (sessionId !== undefined) return sessionId
+  if (urlPattern !== undefined) {
+    const { tabs } = await listTabs(linkUrl, urlPattern, signal)
+    const first = tabs[0]
+    if (first === undefined) throw new Error(`no tab matches urlPattern "${urlPattern}"`)
+    return first.id
+  }
+  return undefined
+}
+
+/**
+ * Run one execute_js command and return its canonical \`data\` value.
+ *
+ * @param linkUrl - the link endpoint.
+ * @param code - JavaScript to run in the target tab.
+ * @param sessionId - resolved tab id (\`undefined\` = master default).
+ * @param signal - cooperative cancellation signal.
+ * @returns the script's returned value.
+ */
+export async function runJs(
+  linkUrl: string,
+  code: string,
+  sessionId: string | undefined,
+  signal: AbortSignal,
+): Promise<JsonValue> {
+  const payload: Record<string, unknown> = {
+    cmd: 'execute_js',
+    code,
+    timeout: String(30),
+  }
+  if (sessionId !== undefined) payload.sessionId = sessionId
+  const raw = await linkCommand(linkUrl, payload, signal)
+  const obj = (typeof raw === 'object' && raw !== null ? raw : {}) as { data?: unknown }
+  return (obj.data as JsonValue | undefined) ?? null
 }
 
 /** A TMWebDriver session record, before projection. */
@@ -600,4 +654,5 @@ export function apply(ctx: Context, config: Config): void {
   const resolved = config as ResolvedConfig
   ctx.tools.register(defineListTabsTool(resolved.linkUrl, resolved.timeoutMs))
   ctx.tools.register(defineExecuteJsTool(resolved.linkUrl, resolved.timeoutMs))
+  applyStructuredTools(ctx, resolved.linkUrl, resolved.timeoutMs)
 }
