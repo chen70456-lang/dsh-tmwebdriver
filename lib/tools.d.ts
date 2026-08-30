@@ -32,5 +32,5 @@ export interface TypeOutput {
  * @param linkUrl - the TMWebDriver link endpoint.
  * @param timeoutMs - per-call cooperative timeout budget.
  */
-export declare function applyStructuredTools(ctx: Context, linkUrl: string, timeoutMs: number): void;
+export declare function applyStructuredTools(ctx: Context, linkUrl: string, timeoutMs: number, snapshotMaxChars?: number): void;
 //# sourceMappingURL=tools.d.ts.map

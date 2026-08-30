@@ -118,6 +118,8 @@ everything after is instant.
 | Tool | Description |
 |------|-------------|
 | `browser_list_tabs` | List scriptable browser tabs (id, url, title). Optional `urlPattern` filter. |
+| `browser_snapshot` | Read the target tab's visible page text (innerText, whitespace-collapsed, capped). |
+| `browser_type` | Type text into an input/textarea by CSS selector (native setter, React/Vue-aware, optional form submit). |
 | `browser_execute_js` | Execute JavaScript in a tab, or pass a JSON command string for the CDP bridge (`cookies`, `cdp`, `batch`, `tabs`). |
 
 ## Config
@@ -128,6 +130,7 @@ The bundle patch row (`cordis.patch.yml`) supports:
 |-------|---------|-------------|
 | `linkUrl` | `http://127.0.0.1:18766/link` | TMWebDriver HTTP link endpoint |
 | `timeoutMs` | `30000` | Per-call cooperative timeout budget |
+| `snapshotMaxChars` | `8000` | Max characters `browser_snapshot` returns per call |
 
 ## Requirements
 

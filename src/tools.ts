@@ -43,13 +43,12 @@ export interface TypeOutput {
 /**
  * The `browser_snapshot` tool: read the target tab visible text, reduced.
  */
-function defineSnapshotTool(linkUrl: string, timeoutMs: number) {
-  const CAP = 20_000
+function defineSnapshotTool(linkUrl: string, timeoutMs: number, maxChars: number) {
   return defineTool({
     name: 'browser_snapshot',
     description:
       'Read the target tab visible page text (innerText, whitespace-collapsed) '
-      + 'capped at ' + String(CAP) + ' characters. Cheaper and more reliable than '
+      + 'capped at ' + String(maxChars) + ' characters. Cheaper and more reliable than '
       + 'hand-writing JavaScript for a quick look at what the page shows.',
     parameters: {
       ...TARGET_PARAMS,
@@ -74,7 +73,7 @@ function defineSnapshotTool(linkUrl: string, timeoutMs: number) {
     isConcurrencySafe: () => true,
     async execute(args, exec: ToolRunContext): Promise<SnapshotOutput> {
       const sid = await resolveTarget(linkUrl, args.sessionId, args.urlPattern, exec.signal)
-      const cap = JSON.stringify(CAP)
+      const cap = JSON.stringify(maxChars)
       const data = await runJs(linkUrl,
         '(function(){'
         + '  var t = (document.body ? document.body.innerText : "").replace(/\s+/g, " ").trim();'
@@ -175,7 +174,7 @@ function defineTypeTool(linkUrl: string, timeoutMs: number) {
  * @param linkUrl - the TMWebDriver link endpoint.
  * @param timeoutMs - per-call cooperative timeout budget.
  */
-export function applyStructuredTools(ctx: Context, linkUrl: string, timeoutMs: number): void {
-  ctx.tools.register(defineSnapshotTool(linkUrl, timeoutMs))
+export function applyStructuredTools(ctx: Context, linkUrl: string, timeoutMs: number, snapshotMaxChars = 8_000): void {
+  ctx.tools.register(defineSnapshotTool(linkUrl, timeoutMs, snapshotMaxChars))
   ctx.tools.register(defineTypeTool(linkUrl, timeoutMs))
 }

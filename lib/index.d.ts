@@ -27,7 +27,11 @@ export interface Config {
     linkUrl?: string;
     /** Cooperative timeout budget (ms) per call. Defaults to 30000. */
     timeoutMs?: number;
+    /** Max characters `browser_snapshot` returns per call. Defaults to 8000. */
+    snapshotMaxChars?: number;
 }
+/** Default `browser_snapshot` character cap. */
+export declare const DEFAULT_SNAPSHOT_MAX_CHARS = 8000;
 /** Schemastery configuration for the TMWebDriver tools. */
 export declare const Config: z<Config>;
 /** One scriptable tab as reported by the TMWebDriver master. */

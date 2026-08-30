@@ -42,12 +42,18 @@ export interface Config {
   linkUrl?: string
   /** Cooperative timeout budget (ms) per call. Defaults to 30000. */
   timeoutMs?: number
+  /** Max characters `browser_snapshot` returns per call. Defaults to 8000. */
+  snapshotMaxChars?: number
 }
+
+/** Default `browser_snapshot` character cap. */
+export const DEFAULT_SNAPSHOT_MAX_CHARS = 8_000
 
 /** Schemastery configuration for the TMWebDriver tools. */
 export const Config: z<Config> = z.object({
   linkUrl: z.string().default(DEFAULT_LINK_URL),
   timeoutMs: z.number().default(DEFAULT_TIMEOUT_MS),
+  snapshotMaxChars: z.number().default(DEFAULT_SNAPSHOT_MAX_CHARS),
 })
 
 /** Complete config after schemastery applies every field default. */
@@ -654,5 +660,5 @@ export function apply(ctx: Context, config: Config): void {
   const resolved = config as ResolvedConfig
   ctx.tools.register(defineListTabsTool(resolved.linkUrl, resolved.timeoutMs))
   ctx.tools.register(defineExecuteJsTool(resolved.linkUrl, resolved.timeoutMs))
-  applyStructuredTools(ctx, resolved.linkUrl, resolved.timeoutMs)
+  applyStructuredTools(ctx, resolved.linkUrl, resolved.timeoutMs, resolved.snapshotMaxChars)
 }
