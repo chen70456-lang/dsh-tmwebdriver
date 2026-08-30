@@ -39,19 +39,6 @@ Agent: browser_execute_js  →  location.href='https://www.baidu.com/'
 Result: 北京  25°C  19~32°C  晴   AQI 优(27)  体感26°  南风2级
 ```
 
-### 🚀 "Publish this project to my GitHub" (real logged-in session)
-
-The same plugin created the repository, added an SSH key, and configured git —
-all inside the user's authenticated browser session:
-
-```text
-Agent: browser_list_tabs    →  find the GitHub tab (logged in as @chen70456-lang)
-       browser_execute_js   →  navigate to github.com/new
-       browser_execute_js   →  fill repo name + click "Create repository"
-       browser_execute_js   →  open settings/ssh/new, add the SSH key
-Result: repo created → git push origin master → https://github.com/...
-```
-
 ### 💡 What that unlocks
 
 | Instead of... | With this plugin |
@@ -63,6 +50,7 @@ Result: repo created → git push origin master → https://github.com/...
 
 > Try it: open a DSH conversation and say *"what tabs do I have open?"* or
 > *"log into my email and draft a reply"*.
+
 **Self-contained.** The TMWebDriver master and the `tmwd_cdp_bridge` Chrome
 extension are bundled here — no dependency on any external agent toolchain,
 and the master auto-starts (with auto-install of its Python deps) on first use.
