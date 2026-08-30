@@ -17,7 +17,11 @@
     "noFallthroughCasesInSwitch": true,
     "rootDir": "src",
     "outDir": "lib",
-    "types": []
+    "types": [
+      "node"
+    ]
   },
-  "include": ["src"]
+  "include": [
+    "src"
+  ]
 }
