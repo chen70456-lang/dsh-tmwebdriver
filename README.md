@@ -1,5 +1,10 @@
 # dsh-tmwebdriver
 
+> **Live demo** — the agent drives your real Chrome: opens Baidu, types a
+> weather query, and reads the result widget (no headless scraping):
+
+![demo](demo.gif)
+
 **What it does.** A DSH profile bundle that gives the agent direct control over
 your real, logged-in browser. Instead of headless automation (which gets
 fingerprinted and loses your sessions), it drives your actual Chrome through a
@@ -16,6 +21,48 @@ Chrome extension bridge — preserving cookies, logins, and real fingerprints.
 Gmail and draft a reply", "check my GitHub notifications", "fill this form on
 the site I'm logged into", "what tabs do I have open".
 
+
+## Showcase — what "direct browser control" looks like
+
+The agent drives your **real, logged-in** Chrome. These are actual runs:
+
+### 🔍 "Search the weather in Beijing" (agent does the whole flow)
+
+The agent types into Baidu, submits the form, and reads the weather widget —
+no headless scraping, no API keys:
+
+```text
+Agent: browser_execute_js  →  location.href='https://www.baidu.com/'
+       browser_execute_js  →  fill #kw with "北京天气" + form.submit()
+       browser_execute_js  →  read #w_weather
+
+Result: 北京  25°C  19~32°C  晴   AQI 优(27)  体感26°  南风2级
+```
+
+### 🚀 "Publish this project to my GitHub" (real logged-in session)
+
+The same plugin created the repository, added an SSH key, and configured git —
+all inside the user's authenticated browser session:
+
+```text
+Agent: browser_list_tabs    →  find the GitHub tab (logged in as @chen70456-lang)
+       browser_execute_js   →  navigate to github.com/new
+       browser_execute_js   →  fill repo name + click "Create repository"
+       browser_execute_js   →  open settings/ssh/new, add the SSH key
+Result: repo created → git push origin master → https://github.com/...
+```
+
+### 💡 What that unlocks
+
+| Instead of... | With this plugin |
+|---------------|------------------|
+| Scraping a public site (rate-limited, bot-blocked) | Drive the site as a real logged-in user |
+| Re-logging into every service for automation | Your existing sessions just work |
+| Copy-pasting cookies/headers into scripts | The bridge handles cookies natively |
+| Headless Chrome (fingerprinted, captcha-blocked) | Real Chrome with real fingerprints |
+
+> Try it: open a DSH conversation and say *"what tabs do I have open?"* or
+> *"log into my email and draft a reply"*.
 **Self-contained.** The TMWebDriver master and the `tmwd_cdp_bridge` Chrome
 extension are bundled here — no dependency on any external agent toolchain,
 and the master auto-starts (with auto-install of its Python deps) on first use.
