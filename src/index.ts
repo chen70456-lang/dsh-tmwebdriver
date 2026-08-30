@@ -333,11 +333,19 @@ async function listTabs(
   const tabs: TabInfo[] = []
   if (Array.isArray(raw)) {
     for (const item of raw) {
-      // find_session returns [sessionId, info] pairs; get_all_sessions returns
-      // plain records. Accept both shapes.
-      const record = Array.isArray(item) ? item[1] : item
-      const tab = projectTab(record)
-      if (tab !== null) tabs.push(tab)
+      // find_session returns [sessionId, info] pairs: the id is item[0] and the
+      // info record (url/title) is item[1]. get_all_sessions returns plain
+      // records with id inline. Merge the pair's id into the info so both
+      // shapes project identically.
+      if (Array.isArray(item) && item.length >= 2) {
+        const [id, info] = item
+        const record = (typeof info === 'object' && info !== null ? info : {}) as Record<string, unknown>
+        const tab = projectTab({ ...record, id })
+        if (tab !== null) tabs.push(tab)
+      } else {
+        const tab = projectTab(item)
+        if (tab !== null) tabs.push(tab)
+      }
     }
   }
   return tabs
