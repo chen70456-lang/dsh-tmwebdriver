@@ -144,6 +144,7 @@ function defineTypeTool(linkUrl: string, timeoutMs: number) {
         + '  }'
         + '  var el = document.querySelector(' + sel + ');'
         + '  if (!el) return false;'
+        + '  if (el.readOnly || el.disabled) return false;'
         + '  el.focus();'
         + '  setNative(el, ' + text + ');'
         + '  if (' + (submit ? 'true' : 'false') + ') {'
