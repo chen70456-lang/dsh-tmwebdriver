@@ -1,12 +1,24 @@
 # dsh-tmwebdriver
 
-DSH profile bundle that controls your real, logged-in browser through
-TMWebDriver — a Chrome extension bridge. Unlike headless automation, it drives
-your actual Chrome session, preserving cookies, logins, and real fingerprints.
+**What it does.** A DSH profile bundle that gives the agent direct control over
+your real, logged-in browser. Instead of headless automation (which gets
+fingerprinted and loses your sessions), it drives your actual Chrome through a
+Chrome extension bridge — preserving cookies, logins, and real fingerprints.
 
-This project is **self-contained**: the TMWebDriver master and the
-`tmwd_cdp_bridge` Chrome extension are bundled here, so there is no dependency
-on any external agent toolchain.
+**What it adds to DSH.** Two model-facing tools:
+
+| Tool | Capability it adds |
+|------|--------------------|
+| `browser_list_tabs` | See what tabs are open in your real browser (id, url, title), optionally filtered by URL |
+| `browser_execute_js` | Run JavaScript in any tab — read pages, click, fill forms, navigate, capture screenshots, read cookies, and drive CDP commands |
+
+**When to use it.** Any task that needs your authenticated session: "open
+Gmail and draft a reply", "check my GitHub notifications", "fill this form on
+the site I'm logged into", "what tabs do I have open".
+
+**Self-contained.** The TMWebDriver master and the `tmwd_cdp_bridge` Chrome
+extension are bundled here — no dependency on any external agent toolchain,
+and the master auto-starts (with auto-install of its Python deps) on first use.
 
 ## Components
 
