@@ -68,7 +68,7 @@ class TMWebDriver:
             return found
         return None
 
-    def ensure_tab(self, url='https://www.baidu.com', timeout=30):
+    def ensure_tab(self, url='http://127.0.0.1:18766/', timeout=30):
         """Ensure at least one scriptable tab exists. Opens Chrome with URL if needed.
         Returns the session_id of the new/existing tab, or None on timeout."""
         import subprocess, os
@@ -112,6 +112,14 @@ class TMWebDriver:
 
     def start_http_server(self):
         self.app = app = bottle.Bottle()
+
+        @app.route('/')
+        def index():
+            return ('<!DOCTYPE html><html><head><meta charset="utf-8">'
+                    '<title>TMWebDriver bridge</title></head><body>'
+                    '<h1>TMWebDriver bridge is running</h1>'
+                    '<p>Keep this tab open so the browser extension can attach.</p>'
+                    '</body></html>')
 
         @app.route('/api/longpoll', method=['GET', 'POST'])
         def long_poll():
