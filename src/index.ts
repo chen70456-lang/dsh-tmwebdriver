@@ -292,8 +292,41 @@ export async function linkCommand(
     throw new Error(`TMWebDriver link endpoint returned HTTP ${response.status}`)
   }
   const body = (await response.json()) as { r?: unknown; error?: string }
+  // The master reports link-level failures at the top level; command failures
+  // (notably a throwing execute_js) arrive as `{ r: { error } }`. Surface both,
+  // otherwise a script error degrades into a silent `data: null`.
   if (body.error !== undefined) throw new Error(`TMWebDriver error: ${body.error}`)
+  if (typeof body.r === 'object' && body.r !== null && 'error' in body.r) {
+    const detail = (body.r as { error?: unknown }).error
+    throw new Error(`TMWebDriver command failed: ${formatMasterError(detail)}`)
+  }
   return body.r
+}
+
+/**
+ * Render the master's error payload as a concise message. The master raises
+ * `str(exception)` for a failing command, which for a browser-side script error
+ * is a Python dict literal (`{'message': ..., 'name': ..., 'stack': ...}`). Pull
+ * the message out when present so the model reads the actual failure, and fall
+ * back to the raw text otherwise.
+ *
+ * @param detail - the `r.error` payload from the master.
+ * @returns a human-readable error message.
+ */
+function formatMasterError(detail: unknown): string {
+  const raw = typeof detail === 'string' ? detail : JSON.stringify(detail)
+  if (typeof raw !== 'string' || raw.length === 0) return 'unknown error'
+  // Python dict literal: {'message': '...', 'name': '...', 'stack': '...'}
+  const quoted = /'message':\s*'((?:[^'\\]|\\.)*)'/.exec(raw)
+  if (quoted?.[1] !== undefined) return quoted[1].replace(/\\\\n/g, ' ').replace(/\\'/g, "'")
+  // JSON object with a message field
+  try {
+    const parsed = JSON.parse(raw) as { message?: unknown }
+    if (typeof parsed.message === 'string') return parsed.message
+  } catch {
+    // not JSON: fall through to the raw text
+  }
+  return raw.length > 500 ? raw.slice(0, 500) + '...' : raw
 }
 
 /**
